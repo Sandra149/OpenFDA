@@ -54,19 +54,19 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 			</head>
 			<body>
 				<h1>Open FDA</h1>
-				<form method='get' action='get_medicines'>
-					<input type='submit' value='Obtener medicinas'>
+				<form method='get' action='listDrugs'>
+					<input type='submit' value='Drug List: Send to OpenFDA'></input>
 				</form>
-				<form method='get' action='search_medicine'>
-					<input type='text' name='drug'>
-					<input type='submit' value='Buscar medicina'>
+				<form method='get' action='searchDrug'>
+					<input type='text' name='drug'></input>
+					<input type='submit' value='Drug Search: Send to OpenFDA'></input>
 				</form>
-				<form method='get' action='get_companies'>
-					<input type='submit' value='Obtener companias'>
+				<form method='get' action='listCompanies'>
+					<input type='submit' value='Company List: Send to OpenFDA'></input>
 				</form>
-				<form method='get' action='search_company'>
-					<input type='text' name='drug'>
-					<input type='submit' value='Buscar compania'>
+				<form method='get' action='searchCompany'>
+					<input type='text' name='company'></input>
+					<input type='submit' value='Company Search: Send to OpenFDA'></input>
 				</form>
 			</body>
 		</html>
@@ -110,34 +110,17 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 		return drugs
 
 	def do_GET(self):
-
-		main_page=False
-		is_medicine_list=False
-		is_medicine_search=False
-		is_company_list=False
-		is_company_search=False
-
-		if self.path=='/':
-			main_page=True
-		elif self.path=='/get_medicines?':
-			is_medicine_list=True
-		elif '/search_medicine?' in self.path:
-			is_medicine_search=True
-		elif self.path=='/get_companies?':
-			is_company_list=True
-		elif '/search_company?' in self.path:
-			is_company_search=True
-
+	
 		self.send_response(200)
 		self.send_header('Content-type','text/html')
 		self.end_headers()
 
-		if main_page:
+		if self.path=='/':
 			html=self.get_main_page()
 
 			self.wfile.write(bytes(html, "utf8")) #wfile es un fichero de escritura que llega al cliente
 
-		elif is_medicine_list:
+		elif self.path=='/listDrugs':
 
 			jsons=self.get_response()
 			medicines_list=json.loads(jsons)['results']
@@ -147,7 +130,7 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 			html=self.get_html(drugs)
 			self.wfile.write(bytes(html, "utf8"))
 
-		elif is_medicine_search:
+		elif '/searchDrug?' in self.path:
 
 			medicamento_usuario=self.path.split('=')[1]
 
@@ -159,7 +142,7 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 			html=self.get_html(company_numb)
 			self.wfile.write(bytes(html, "utf8"))
 
-		elif is_company_list:
+		elif self.path=='/listCompanies':
 
 			jsons=self.get_response()
 			company_list=json.loads(jsons)['results']
@@ -169,7 +152,7 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 			html=self.get_html(drugs)
 			self.wfile.write(bytes(html, "utf8"))
 
-		elif is_company_search:
+		elif '/searchCompany?' in self.path:
 
 			company_numb = self.path.split('=')[1]
 
