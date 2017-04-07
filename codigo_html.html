@@ -1,0 +1,56 @@
+<html>
+	<head>
+		<link rel="shortcut icon" href="https://www.catalystmints.com/templates/noscope_new/favicon.ico">
+		<title> OpenFDA Cool App </title>
+        <style>
+		form{
+            margin: 30px;
+        }
+		</style>
+        <style type="text/css">
+        .boton{
+          text-decoration: none;
+          padding: 3px;
+          padding-left: 10px;
+          padding-right: 10px;
+          font-family: Calibri;
+          font-weight: 300;
+          font-size: 15px;
+          font-style: italic;
+          color: #ffffff;
+          background-color: #8A2032;
+          border-radius: 15px;
+          border: 3px double #006505;
+        }
+        .boton:hover{
+          opacity: 0.6;
+          text-decoration: none;
+        }
+      </style>
+	</head>
+	<body>
+		<h1 align="center" style="background-color:rgb(138, 32, 50);color:white;font-family: Comic Sans"> Open FDA </h1>
+        <div style='border-top: 4px dashed #bfbfbf'/>
+		<form method='get' action='listDrugs'>
+			<input type='submit' value='Drug List: Send to OpenFDA' class='boton'></input>
+			Limit:<input type='text' size='4' name='limit'></input>
+		</form>
+		<form method='get' action='searchDrug'>
+			<input type='text' name='drug'></input>
+			<input type='submit' value='Drug Search: Send to OpenFDA' class='boton'></input>
+
+		</form>
+		<form method='get' action='listCompanies'>
+			<input type='submit' value='Company List: Send to OpenFDA' class='boton'></input>
+			Limit:<input type='text' size='4' name='limit'></input>
+		</form>
+		<form method='get' action='searchCompany'>
+			<input type='text' name='company'></input>
+			<input type='submit' value='Company Search: Send to OpenFDA' class='boton'></input>
+		</form>
+		<form method='get' action='listGender'>
+			<input type='submit' value='Patient Sex List: Send to OpenFDA'class='boton'></input>
+			Limit:<input type='text' size='4' name='limit'></input>
+		</form>
+	</body>
+</html>
