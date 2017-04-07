@@ -18,226 +18,236 @@
 import http.client
 import http.server
 import json
+
 #ejecutar con pyhton3
 
+class OpenFDAClient():
+
+    OPENFDA_API_URL = "api.fda.gov"
+    OPENFDA_API_EVENT='/drug/event.json'
+
+    def get_response(self, query = '',limite = ''):
+        conn = http.client.HTTPSConnection(self.OPENFDA_API_URL)
+
+        if len(query) == 0:
+            limite = '?limit='+str(limite)
+        else:
+            limite = '&limit=10'
+        
+        
+        print (self.OPENFDA_API_EVENT +limite)
+
+        conn.request("GET", self.OPENFDA_API_EVENT + query+limite)
+
+        response = conn.getresponse()
+        print (response.status, response.reason)
+
+        return response.read().decode('utf8')    
+
+class OpenFDAParser():
+    
+    def get_drugs_from_medicines(self,medicines_list):
+        drugs=[]
+        for medicine in medicines_list:
+            drugs+= [medicine['patient']['drug'][0]['medicinalproduct']]
+
+        return drugs
+
+    def get_companynumb(self,medicines_list):  
+        number_list=[]
+        for medicine in medicines_list:
+            number_list += [medicine['companynumb']]
+        return number_list
+
+    def get_company_from_events(self,events):
+        drugs=[]
+        for event in events:
+            drugs += [event['companynumb']]
+        return drugs
+
+    def get_patient_sex(self,events):
+        gender=[]
+        for event in events:
+            gender += [event['patient']['patientsex']]
+        return gender
+
+class OpenFDAHTML():
+
+    def get_html(self,drugs):
+
+        drugs_html = '''
+        <html>
+            <head>
+                <title>OpenFDA Cool App</title>
+            </head>
+            <body>
+                <ol>
+                '''
+        for drug in drugs:
+            drugs_html+= '<li>'+drug+'</li>\n'
+
+        drugs_html+= '''
+                </ol>
+            </body>
+        </html>
+        '''
+        return drugs_html
+
+    def get_main_page(self):
+
+        with open ('codigo_html.html','r') as f:
+            html = f.read()
+            
+        return html
+
+    def get_error_page(self):
+
+        with open ('codigo_html_error.html','r') as f:
+
+            html = ''
+            for line in f:
+                html+= line
+
+            return html
+    
+
 class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
-	OPENFDA_API_URL="api.fda.gov"
-	OPENFDA_API_EVENT='/drug/event.json'
-	SEARCH_MEDICINE = "?search=patient.drug.medicinalproduct:"
-	SEARCH_COMPANY = "?search=companynumb"
+    
+    
+    SEARCH_MEDICINE = "?search=patient.drug.medicinalproduct:"
+    SEARCH_COMPANY = "?search=companynumb"
 
-	def get_html(self,drugs):
-		drugs_html='''
-		<html>
-			<head>
-				<title>OpenFDA Cool App</title>
-			</head>
-			<body>
-				<ol>
-				'''
-		for drug in drugs:
-			drugs_html+='<li>'+drug+'</li>\n'
+    def pass_limit(self,path):
 
-		drugs_html+='''
-				</ol>
-			</body>
-		</html>
-		'''
-		return drugs_html
+        limite_usuario = path.split('=')[1]
+        return str(limite_usuario)
 
-	def get_main_page(self):
-		html= """
-		<html>
-			<head>
-				<link rel="shortcut icon" href="https://www.catalystmints.com/templates/noscope_new/favicon.ico">
-				<title>OpenFDA Cool App</title>
-			</head>
-			<body>
-				<h1>Open FDA</h1>
-				<form method='get' action='listDrugs'>
-					<input type='submit' value='Drug List: Send to OpenFDA'></input>
-					Limit:<input type='text' size='4' name='limit'></input>
-				</form>
-				<form method='get' action='searchDrug'>
-					<input type='text' name='drug'></input>
-					<input type='submit' value='Drug Search: Send to OpenFDA'></input>
+    def correct_server_answer(self):
 
-				</form>
-				<form method='get' action='listCompanies'>
-					<input type='submit' value='Company List: Send to OpenFDA'></input>
-					Limit:<input type='text' size='4' name='limit'></input>
-				</form>
-				<form method='get' action='searchCompany'>
-					<input type='text' name='company'></input>
-					<input type='submit' value='Company Search: Send to OpenFDA'></input>
-				</form>
-				<form method='get' action='listPatientsex'>
-					<input type='submit' value='Patient Sex List: Send to OpenFDA'></input>
-					Limit:<input type='text' size='4' name='limit'></input>
-				</form>
-			</body>
-		</html>
-		"""
-		return html
+        self.send_response(200)
+        self.send_header('Content-type','text/html')
+        self.end_headers()
+    
+    def is_query_ok(self, query):
+        if 'limit' in query:
+            try:
+                limit = self.path.split('=')[1]
 
-	def get_error_page(self):
-		html= """
-		<html>
-			<head>
-				<link rel="shortcut icon" href="http://gashuynhlien.vn/Images/error.png">
-				<title>Error OpenFDA</title>
-			</head>
-			<body>
-				<h1>Error</h1>
-				<p>404 File not found</p>
-			</body>
-		</html>
-		"""
-		return html
+                limit = int(limit)
 
-	def get_response(self, query='',limite=''):
-		conn = http.client.HTTPSConnection(self.OPENFDA_API_URL)	#con es un objeto utilizado para interactuar con el servidor remoto
+            except ValueError:
+                return False
 
-		if len(query)==0:
-			limite='?limit='+str(limite)
-		else:
-			limite='&limit=10'
-		
-		
-		print (self.OPENFDA_API_EVENT +limite)
+        return True
 
-		conn.request("GET", self.OPENFDA_API_EVENT + query+limite)
+    def do_GET(self):
+                
+        print(self.path)
 
-		response = conn.getresponse()
-		print (response.status, response.reason)
+        correct = self.is_query_ok(self.path)
+        client = OpenFDAClient()
+        parser = OpenFDAParser()
+        html = OpenFDAHTML()
 
-		return response.read().decode('utf8')	#decodificar a un string porque no entendemos los bytes
+        if not correct:
+            self.send_response(404)
+            self.send_header('Content-Type', 'text/html')
+            self.end_headers()
+            
+            html = html.get_error_page()
 
-	def get_drugs_from_medicines(self,medicines_list):
-		drugs=[]
-		for medicine in medicines_list:
-			drugs+= [medicine['patient']['drug'][0]['medicinalproduct']]
+            self.wfile.write(bytes(html, 'utf8'))
 
-		return drugs
+            return         
 
-	def get_companynumb(self,medicines_list):
-		number_list=[]
-		for medicine in medicines_list:
-			number_list += [medicine['companynumb']]
-		return number_list
+        if self.path=='/':
+            
+            self.correct_server_answer()
+        
+            html = html.get_main_page()
 
-	def get_company_from_events(self,events):
-		drugs=[]
-		for event in events:
-			drugs += [event['companynumb']]
-		return drugs
+            self.wfile.write(bytes(html, "utf8")) 
 
-	def get_patient_sex(self,events):
-		gender=[]
-		for event in events:
-			gender += [event['patient']['patientsex']]
-		return gender
-	
-	def pass_limit(self,path):
-		limite_usuario=path.split('=')[1]
-		return str(limite_usuario)
+        elif '/listDrugs?limit=' in self.path:
 
-	def correct_server_answer(self):
-		self.send_response(200)
-		self.send_header('Content-type','text/html')
-		self.end_headers()
-		
+            self.correct_server_answer()
 
-	def do_GET(self):
-		
-		if self.path=='/':
-			self.correct_server_answer()
-		
-			html=self.get_main_page()
+            query=''
+            jsons=client.get_response(query,self.pass_limit(self.path))
+            medicines_list=json.loads(jsons)['results']
 
-			self.wfile.write(bytes(html, "utf8")) #wfile es un fichero de escritura que llega al cliente
+            drugs= parser.get_drugs_from_medicines(medicines_list)
 
-		elif self.path=='/listDrugs?limit='+self.pass_limit(self.path):
+            html = html.get_html(drugs)
+            self.wfile.write(bytes(html, "utf8"))
 
-			self.correct_server_answer()
+        elif '/searchDrug?' in self.path:
 
-			query=''
-			jsons=self.get_response(query,self.pass_limit(self.path))
-			medicines_list=json.loads(jsons)['results']
+            self.correct_server_answer()
 
-			drugs=self.get_drugs_from_medicines(medicines_list)
+            limite = 10
 
-			html=self.get_html(drugs)
-			self.wfile.write(bytes(html, "utf8"))
+            medicamento_usuario=self.path.split('=')[1]
+            
+            jsons = client.get_response(self.SEARCH_MEDICINE+medicamento_usuario,limite)
+            medicines_list = json.loads(jsons)['results']
 
-		elif '/searchDrug?' in self.path:
+            company_numb = parser.get_companynumb(medicines_list)
 
-			self.correct_server_answer()
+            html = html.get_html(company_numb)
+            self.wfile.write(bytes(html, "utf8"))
 
-			limite=10
+        elif '/listCompanies?limit=' in self.path:
 
-			medicamento_usuario=self.path.split('=')[1]
-			
-			jsons=self.get_response(self.SEARCH_MEDICINE+medicamento_usuario,limite)
-			medicines_list=json.loads(jsons)['results']
+            self.correct_server_answer()
 
-			company_numb=self.get_companynumb(medicines_list)
+            query=''
 
-			html=self.get_html(company_numb)
-			self.wfile.write(bytes(html, "utf8"))
+            jsons=client.get_response(query, self.pass_limit(self.path))
+            company_list=json.loads(jsons)['results']
 
-		elif self.path=='/listCompanies?limit='+self.pass_limit(self.path):
+            drugs = parser.get_company_from_events(company_list)
 
-			self.correct_server_answer()
+            html = html.get_html(drugs)
+            self.wfile.write(bytes(html, "utf8"))
 
-			query=''
+        elif '/searchCompany?' in self.path:
 
-			jsons=self.get_response(query, self.pass_limit(self.path))
-			company_list=json.loads(jsons)['results']
+            self.correct_server_answer()
 
-			drugs=self.get_company_from_events(company_list)
+            limite=10
 
-			html=self.get_html(drugs)
-			self.wfile.write(bytes(html, "utf8"))
+            company_numb = self.path.split('=')[1]
 
-		elif '/searchCompany?' in self.path:
+            print(self.path)
 
-			self.correct_server_answer()
+            jsons = client.get_response(self.SEARCH_COMPANY.replace('companynumb', company_numb),limite)
+            company = json.loads(jsons)['results']
 
-			limite=10
+            company_numb= parser.get_drugs_from_medicines(company)
+            html = html.get_html(company_numb)
+            self.wfile.write(bytes(html, "utf8"))
+        
+        elif '/listGender?limit=' in self.path:
+            
+	self.correct_server_answer()
 
-			company_numb = self.path.split('=')[1]
+            query = ''
 
-			print(self.path)
+            jsons = client.get_response(query,self.pass_limit(self.path))
+            gender_list = json.loads(jsons)['results']
 
-			jsons = self.get_response(self.SEARCH_COMPANY.replace('companynumb', company_numb),limite)
-			company = json.loads(jsons)['results']
+            drugs = parser.get_patient_sex(gender_list)
 
-			company_numb=self.get_drugs_from_medicines(company)
-			html=self.get_html(company_numb)
-			self.wfile.write(bytes(html, "utf8"))
-		
-		elif self.path=='/listPatientsex?limit='+self.pass_limit(self.path):
-			
-			self.correct_server_answer()
+            html = html.get_html(drugs)
+            self.wfile.write(bytes(html, "utf8"))
+        else:
 
-			query=''
+            self.send_response(404)
+            self.send_header('Content-type','text/html')
+            self.end_headers()
 
-			jsons=self.get_response(query,self.pass_limit(self.path))
-			gender_list=json.loads(jsons)['results']
+            html = html.get_error_page()
+            self.wfile.write(bytes(html, "utf8"))
 
-			drugs=self.get_patient_sex(gender_list)
-
-			html=self.get_html(drugs)
-			self.wfile.write(bytes(html, "utf8"))
-		else:
-
-			self.send_response(404)
-			self.send_header('Content-type','text/html')
-			self.end_headers()
-
-			html=self.get_error_page()
-			self.wfile.write(bytes(html, "utf8"))
-
-
-		return
+        return
